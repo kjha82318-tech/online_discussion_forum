@@ -60,46 +60,57 @@ module.exports = {
     try {
       const { title, content, selectedSpace, selectedTags } = req.body;
 
+      if (!title || !content) {
+        return res.status(400).json({
+          message: "Title and content are required",
+        });
+      }
+
       let createdTags = [];
 
-      for (let index = 0; index < selectedTags.length; index++) {
-        let name = selectedTags[index].value;
-        let tagFound = await Tag.findOne({ name });
-        if (!tagFound) {
-          let tag = await Tag.create({
-            name: name,
-            createdBy: req.user.username,
-          });
-          createdTags.push(tag._id);
-        } else {
-          createdTags.push(tagFound._id);
+      if (selectedTags && selectedTags.length > 0) {
+        for (let tagObj of selectedTags) {
+          const name = tagObj.value;
+
+          let tagFound = await Tag.findOne({ name });
+
+          if (!tagFound) {
+            const tag = await Tag.create({
+              name,
+              createdBy: req.user.username,
+            });
+            createdTags.push(tag._id);
+          } else {
+            createdTags.push(tagFound._id);
+          }
         }
       }
 
-      const slug = title
-        .toString()
-        .normalize("NFKD")
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w\-]+/g, "")
-        .replace(/\_/g, "-")
-        .replace(/\-\-+/g, "-")
-        .replace(/\-$/g, "");
+      const slug =
+        title
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^\w\-]+/g, "") +
+        "-" +
+        Date.now();
 
       let topic = await Topic.create({
         owner: req.user.username,
-        title: title.trim(),
-        content: content.trim(),
-        slug: slug.trim(),
+        title,
+        content,
+        slug,
         tags: createdTags,
+        space: selectedSpace || null,
       });
+
       topic = await topic.populate({
         path: "author",
-        select: { password: 0, __v: 0 },
+        select: { password: 0 },
       });
+
       return res.status(201).json({
-        topic: topic,
+        topic,
         message: "Topic successfully created!",
       });
     } catch (err) {

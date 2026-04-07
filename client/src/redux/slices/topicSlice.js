@@ -55,25 +55,32 @@ export const getTopic = createAsyncThunk(
   }
 );
 
+const API = "http://localhost:5000/api/topics";
+
 export const addTopic = createAsyncThunk(
-  "topic/addTopic",
-  async (
-    { title, content, selectedSpace, selectedTags },
-    { rejectWithValue }
-  ) => {
+  "topic/add",
+  async (data, thunkAPI) => {
     try {
-      const { data } = await axios.post("/api/topics", {
-        title,
-        content,
-        selectedSpace,
-        selectedTags,
+      const token = localStorage.getItem("token");
+
+      const res = await axios.post(API, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      return data;
-    } catch (err) {
-      return rejectWithValue(err.response.data);
+
+      return res.data;
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong";
+
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
+
 
 export const deleteTopic = createAsyncThunk(
   "topic/deleteTopic",

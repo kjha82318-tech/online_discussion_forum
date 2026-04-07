@@ -49,8 +49,8 @@ const Header = () => {
       <header>
         <Navbar expand="lg">
           <Container>
-            <Link to="/" onClick={() => dispatch(setSearchQuery(""))}>
-              <Navbar.Brand>Forum Logo</Navbar.Brand>
+            <Link to="/" onClick={() => dispatch(setSearchQuery(""))} style={{ marginLeft: "8px", fontSize: "25px" , textDecoration: "none"}}>
+              <Navbar.Brand  >ONLINE DISCUSSION</Navbar.Brand>
             </Link>
             <Navbar.Toggle aria-controls="navbarsupportedcontent" />
             <Navbar.Collapse id="navbarsupportedcontent">

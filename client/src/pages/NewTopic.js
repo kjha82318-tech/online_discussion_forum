@@ -1,145 +1,156 @@
 import { useEffect, useState } from "react";
-import { Container, Row, Col, Form, Button } from "react-bootstrap";
-import Select from "react-select";
+import { Container, Row, Col, Form, Button, Alert } from "react-bootstrap";
 import CreatableSelect from "react-select/creatable";
+import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
 import { addTopic, resetNewTopic, getSpaces } from "../redux/slices/topicSlice";
+import { Link } from "react-router-dom";
 
 const NewTopic = () => {
   const dispatch = useDispatch();
-  const { message, isLoading, isSuccess, isError, newTopicURL } = useSelector(
-    (state) => state.topic.addTopic
-  );
+
+  const { message, isLoading, isSuccess, isError, newTopicURL } =
+    useSelector((state) => state.topic.addTopic);
 
   const { spaces } = useSelector((state) => state.topic);
 
-  useEffect(() => {
-    document.title = `Add New Topic | ONetwork Forum`;
-  }, []);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [selectedSpace, setSelectedSpace] = useState(null);
+  const [selectedTags, setSelectedTags] = useState([]);
 
+  // Load spaces + reset state
   useEffect(() => {
     dispatch(resetNewTopic());
     dispatch(getSpaces());
   }, [dispatch]);
 
-  var options = [];
-
-  if (spaces && spaces?.length > 0) {
-    spaces.forEach((space) => {
-      options.push({ value: space.name, label: space.name });
-    });
-  }
-
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [selectedSpace, setSelectedSpace] = useState("Android");
-  const [selectedTags, setSelectedTags] = useState([]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title || title?.trim()?.length === 0) return;
-    if (!content || content?.trim()?.length === 0) return;
-    if (!selectedSpace) return;
-    if (!selectedTags || selectedTags.length === 0) return;
-    try {
-      dispatch(addTopic({ title, content, selectedSpace, selectedTags }));
-    } catch (err) {
-      console.log(err.message);
+  // Reset form after success
+  useEffect(() => {
+    if (isSuccess) {
+      setTitle("");
+      setContent("");
+      setSelectedTags([]);
+      setSelectedSpace(null);
     }
+  }, [isSuccess]);
+
+  const options =
+    spaces?.map((space) => ({
+      value: space.name,
+      label: space.name,
+    })) || [];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      alert("Title is required");
+      return;
+    }
+
+    if (!content.trim()) {
+      alert("Content is required");
+      return;
+    }
+
+    // convert tags safely
+    const formattedTags =
+      selectedTags?.length > 0
+        ? selectedTags.map((tag) => ({
+            value: tag.value,
+          }))
+        : [];
+
+    dispatch(
+      addTopic({
+        title: title.trim(),
+        content: content.trim(),
+        selectedSpace: selectedSpace || null,
+        selectedTags: formattedTags,
+      })
+    );
   };
 
   return (
-    <main>
-      <Container>
-        <Row className="new-topic align-items-center justify-content-center">
-          <Col lg={8}>
-            <section className="new-topic-form">
-              {isLoading && <div className="loader"></div>}
-              <h5 className="section-title">Add New Topic</h5>
-              {message && (
-                <div
-                  className={`message ${isError ? "error" : ""} ${
-                    isSuccess ? "success" : ""
-                  } ${isLoading ? "info" : ""}`}
-                >
-                  {`${message} `}
-                  {newTopicURL && (
-                    <Link to={newTopicURL}>Click here to preview it.</Link>
-                  )}
-                </div>
+    <Container className="mt-4">
+      <Row className="justify-content-center">
+        <Col lg={8}>
+          <h3 className="mb-4">Add New Topic</h3>
+
+          {/* MESSAGE */}
+          {message && (
+            <Alert variant={isError ? "danger" : "success"}>
+              {message}
+              {newTopicURL && (
+                <>
+                  {" "}
+                  <Link to={newTopicURL}>View Topic</Link>
+                </>
               )}
-              <Form className="floating" onSubmit={handleSubmit}>
-                <Form.Group
-                  className="form-group mb-3"
-                  as={Col}
-                  controlId="topicTitle"
-                >
-                  <Form.Control
-                    type="text"
-                    name="title"
-                    value={title}
-                    disabled={isLoading}
-                    placeholder="Enter topic title..."
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                  <Form.Label>Topic Title</Form.Label>
-                </Form.Group>
-                <Form.Group
-                  className="form-group mb-3"
-                  as={Col}
-                  controlId="topicDescription"
-                >
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={content}
-                    disabled={isLoading}
-                    placeholder="Enter topic content..."
-                    onChange={(e) => setContent(e.target.value)}
-                  />
-                  <Form.Label>Topic Content</Form.Label>
-                </Form.Group>
-                <Form.Group className="form-group select2-container mb-3">
-                  <Select
-                    classNamePrefix="form-control"
-                    placeholder="Choose Topic's Space..."
-                    title="space"
-                    options={options}
-                    isDisabled={isLoading}
-                    value={options.filter((obj) => obj.value === selectedSpace)}
-                    onChange={(e) => setSelectedSpace(e.value)}
-                  />
-                  <Form.Label className="control-label">Topic Space</Form.Label>
-                </Form.Group>
-                <Form.Group className="form-group select2-container mb-3">
-                  <CreatableSelect
-                    components={{
-                      Menu: () => null,
-                      DropdownIndicator: () => null,
-                      IndicatorSeparator: () => null,
-                    }}
-                    placeholder="Enter Topic Tags..."
-                    isMulti
-                    isDisabled={isLoading}
-                    value={selectedTags}
-                    onChange={(e) => setSelectedTags(e)}
-                  />
-                  <Form.Label className="control-label">Topic Tags</Form.Label>
-                </Form.Group>
-                <Button
-                  disabled={isLoading}
-                  className="mb-4 w-100"
-                  type="submit"
-                >
-                  {isLoading ? "Adding Topic..." : "Add Topic"}
-                </Button>
-              </Form>
-            </section>
-          </Col>
-        </Row>
-      </Container>
-    </main>
+            </Alert>
+          )}
+
+          <Form onSubmit={handleSubmit}>
+            {/* TITLE */}
+            <Form.Group className="mb-3">
+              <Form.Label>Title</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter topic title"
+                value={title}
+                disabled={isLoading}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </Form.Group>
+
+            {/* CONTENT */}
+            <Form.Group className="mb-3">
+              <Form.Label>Content</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                placeholder="Enter topic content"
+                value={content}
+                disabled={isLoading}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            </Form.Group>
+
+            {/* SPACE */}
+            <Form.Group className="mb-3">
+              <Form.Label>Space</Form.Label>
+              <Select
+                options={options}
+                placeholder="Select space"
+                isDisabled={isLoading}
+                value={
+                  options.find((opt) => opt.value === selectedSpace) || null
+                }
+                onChange={(e) => setSelectedSpace(e?.value)}
+              />
+            </Form.Group>
+
+            {/* TAGS */}
+            <Form.Group className="mb-3">
+              <Form.Label>Tags</Form.Label>
+              <CreatableSelect
+                isMulti
+                placeholder="Add tags"
+                isDisabled={isLoading}
+                value={selectedTags}
+                onChange={(e) => setSelectedTags(e || [])}
+              />
+            </Form.Group>
+
+            {/* SUBMIT */}
+            <Button type="submit" disabled={isLoading} className="w-100">
+              {isLoading ? "Creating..." : "Create Topic"}
+            </Button>
+          </Form>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
