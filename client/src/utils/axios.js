@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL: "https://online-discussion-forum-iydj.onrender.com",
   withCredentials: true,
   timeout: 10000,
   delayed: true,
